@@ -141,6 +141,10 @@ func UpdateUserById(ctx *fiber.Ctx) error {
 		user.Phone = UserUpdateRequest.Phone
 	}
 
+	if UserUpdateRequest.Password != "" {
+		user.Password = UserUpdateRequest.Password
+	}
+
 	user.UpdatedAt = time.Now()
 
 	// Simpan perubahan ke database
