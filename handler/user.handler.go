@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"fmt"
 	"go-fiber/database"
 	"go-fiber/model/entity"
 	"go-fiber/model/request"
 	"go-fiber/model/response"
+	"go-fiber/model/utils"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,6 +19,27 @@ func UserHandlerRead(ctx *fiber.Ctx) error {
 }
 
 func GetAllUser(ctx *fiber.Ctx) error {
+	// Mendapatkan token dari header
+	token := ctx.Get("x-token")
+
+	// Decode token untuk mendapatkan informasi user
+	claims, err := utils.DecodeToken(token)
+	if err != nil {
+		// Handle error decoding token
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Unauthorized",
+		})
+	}
+
+	// Dapatkan email dari claims
+	userEmail, ok := claims["email"].(string)
+	if !ok {
+		// Handle jika email tidak ditemukan dalam claims
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid token claims",
+		})
+	}
+
 	// Siapkan variable untuk menampung
 	var users []entity.User
 
@@ -28,6 +51,7 @@ func GetAllUser(ctx *fiber.Ctx) error {
 
 	return ctx.JSON(fiber.Map{
 		"data": users,
+		"hit":  userEmail,
 	})
 }
 
@@ -37,12 +61,20 @@ func CreateUser(ctx *fiber.Ctx) error {
 		return err
 	}
 
+	hashedPassword, err := utils.HashPassword(user.Password)
+	if err != nil {
+		fmt.Println(err)
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "internal server error",
+		})
+	}
+
 	newUser := entity.User{
 		Name:     user.Name,
 		Address:  user.Address,
 		Phone:    user.Phone,
 		Email:    user.Email,
-		Password: user.Password,
+		Password: hashedPassword,
 	}
 
 	errFindEmail := database.DB.Find(&newUser, "email = ?", user.Email).RowsAffected
@@ -142,7 +174,14 @@ func UpdateUserById(ctx *fiber.Ctx) error {
 	}
 
 	if UserUpdateRequest.Password != "" {
-		user.Password = UserUpdateRequest.Password
+		hashedPassword, err := utils.HashPassword(UserUpdateRequest.Password)
+		if err != nil {
+			fmt.Println(err)
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"message": "internal server error",
+			})
+		}
+		user.Password = hashedPassword
 	}
 
 	user.UpdatedAt = time.Now()
