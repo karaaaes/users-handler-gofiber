@@ -3,6 +3,7 @@ package route
 import (
 	"go-fiber/handler"
 	"go-fiber/middleware"
+	"go-fiber/model/utils"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -20,4 +21,7 @@ func RouteInit(r *fiber.App) {
 	r.Put("/api/user/:id", handler.UpdateUserById)
 	r.Put("/api/user/:id/change-password", handler.UpdatePasswordById)
 	r.Delete("/api/user/:id", handler.DeleteUser)
+
+	// Upload Comic
+	r.Post("api/comic", utils.HandleCoverComic, handler.CreateComic)
 }

@@ -8,7 +8,7 @@ import (
 
 func RunMigration() {
 	// package_name.variable_db.orm_gorm
-	err := database.DB.AutoMigrate(&entity.User{})
+	err := database.DB.AutoMigrate(&entity.User{}, &entity.Comic{})
 	if err != nil {
 		fmt.Println("Migration failed")
 	}
